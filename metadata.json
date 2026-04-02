@@ -1,0 +1,5 @@
+{
+  "name": "Vibe Check",
+  "description": "AI-powered fashion lookbook generator based on your Spotify playlists.",
+  "requestFramePermissions": ["clipboard-read", "clipboard-write"]
+}
