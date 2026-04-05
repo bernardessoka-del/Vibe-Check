@@ -373,6 +373,48 @@ export default function App() {
     setTimeout(() => setIsRetrying(false), 1000);
   };
 
+  const safeJsonParse = (text: string, fallback: any = {}) => {
+    try {
+      // Try direct parse first
+      return JSON.parse(text);
+    } catch (e) {
+      // If direct parse fails, try to extract JSON from markdown blocks
+      const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/```([\s\S]*?)```/);
+      if (jsonMatch && jsonMatch[1]) {
+        try {
+          return JSON.parse(jsonMatch[1].trim());
+        } catch (e2) {
+          console.error("Failed to parse extracted JSON:", e2);
+        }
+      }
+      
+      // Try to find anything that looks like a JSON object/array
+      const firstBrace = text.indexOf('{');
+      const lastBrace = text.lastIndexOf('}');
+      const firstBracket = text.indexOf('[');
+      const lastBracket = text.lastIndexOf(']');
+      
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        try {
+          return JSON.parse(text.substring(firstBrace, lastBrace + 1));
+        } catch (e3) {
+          console.error("Failed to parse braced JSON:", e3);
+        }
+      }
+      
+      if (firstBracket !== -1 && lastBracket !== -1) {
+        try {
+          return JSON.parse(text.substring(firstBracket, lastBracket + 1));
+        } catch (e4) {
+          console.error("Failed to parse bracketed JSON:", e4);
+        }
+      }
+
+      console.error("All JSON extraction attempts failed for text:", text);
+      return fallback;
+    }
+  };
+
   const generateLookbook = async () => {
     if (!playlistUrl) return;
     
@@ -400,7 +442,7 @@ export default function App() {
         }
       });
       
-      const styleTags = JSON.parse(tagsResponse.text || '[]');
+      const styleTags = safeJsonParse(tagsResponse.text || '[]', []);
       console.log("Generated Style Tags:", styleTags);
 
       // Optimization: Filter products by gender before sending to AI to reduce token count
@@ -551,7 +593,7 @@ Return this exact JSON structure:
           }
         });
 
-        const data = JSON.parse(response.text || '{}');
+        const data = safeJsonParse(response.text || '{}', {});
         
         if (data.error) {
           throw new Error(data.error);
@@ -587,9 +629,22 @@ Return this exact JSON structure:
         setPreviousOutfitIds(prev => [...prev, top.id, bottom.id, shoes.id]);
         setSearchCount(prev => prev + 1);
         setView('result');
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Failed to generate your lookbook. Make sure your API key is set.");
+      
+      let errorMessage = "Failed to generate your lookbook. Please try again.";
+      
+      // Check for specific Gemini API errors
+      const errorStr = String(err);
+      if (errorStr.includes("API key expired") || errorStr.includes("API_KEY_INVALID")) {
+        errorMessage = "Your Gemini API key has expired or is invalid. Please update it in your environment settings.";
+      } else if (errorStr.includes("quota") || errorStr.includes("429")) {
+        errorMessage = "AI service quota exceeded. Please wait a moment and try again.";
+      } else if (errorStr.includes("JSON")) {
+        errorMessage = "The AI returned an invalid response format. Please try again.";
+      }
+      
+      setError(errorMessage);
       setView('home');
     }
   };
