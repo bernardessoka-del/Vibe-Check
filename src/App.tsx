@@ -307,7 +307,14 @@ export default function App() {
 
   const fetchProducts = useCallback(async () => {
     if (!supabase) {
-      setSupabaseError('Supabase configuration missing');
+      const url = import.meta.env.VITE_SUPABASE_URL;
+      const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!url || !key) {
+        setSupabaseError('Supabase configuration missing: VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is not set.');
+      } else {
+        setSupabaseError('Supabase initialization failed: Check if VITE_SUPABASE_URL is a valid URL.');
+      }
       return;
     }
     
@@ -339,8 +346,19 @@ export default function App() {
         setSupabaseError('Product catalog is empty');
       }
     } catch (err: any) {
-      console.error('Failed to fetch products:', err.message);
-      setSupabaseError(err.message);
+      console.error('Failed to fetch products:', err);
+      
+      let errorMessage = err.message;
+      if (err.message === 'Failed to fetch') {
+        const url = import.meta.env.VITE_SUPABASE_URL;
+        if (url && url.includes('localhost') && window.location.hostname !== 'localhost') {
+          errorMessage = 'Network Error: Attempting to connect to a local Supabase instance (localhost) from a remote environment. Please update VITE_SUPABASE_URL to your production Supabase URL.';
+        } else {
+          errorMessage = 'Network Error: Failed to connect to Supabase. This could be due to an incorrect URL, a paused project, or network blocking (CORS/Firewall).';
+        }
+      }
+      
+      setSupabaseError(errorMessage);
     }
   }, []);
 
@@ -760,7 +778,19 @@ Return this exact JSON structure:
                   </div>
                 </div>
 
-                {error && <p className="text-red-500 text-sm">{error}</p>}
+                {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
+                {supabaseError && (
+                  <div className="w-full p-4 bg-red-50 border border-red-100 rounded-xl flex flex-col gap-2">
+                    <p className="text-red-600 text-sm font-medium">Database Connection Issue</p>
+                    <p className="text-red-500 text-xs leading-relaxed">{supabaseError}</p>
+                    <button 
+                      onClick={handleRetry}
+                      className="text-[10px] uppercase tracking-widest font-bold text-red-600 hover:text-red-700 transition-colors self-start"
+                    >
+                      Try Reconnecting
+                    </button>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
