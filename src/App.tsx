@@ -105,228 +105,178 @@ const StepCard = ({ number, title, description, image }: { number: string, title
 );
 
 // --- Constants ---
-const TAGS_PROMPT = `You are a fashion stylist AI.
+const TAGS_PROMPT = `You are an expert fashion stylist AI that translates music into fashion aesthetics.
 
-Your task is to convert a music playlist or vibe into a clean array of 5–8 fashion style tags.
-
-Focus on:
-
-* aesthetic (streetwear, minimal, luxury, etc.)
-* color/mood (dark, neutral, vibrant, monochrome)
-* fit (oversized, slim, relaxed)
-* occasion or energy (casual, nightlife, athletic)
-
-Return ONLY a JSON array of tags.
-
-Below are 50 examples. Learn the pattern and generate similar tags.
+Your task:
+Convert ANY input (genres, playlists, artists, or vibes) into fashion style tags.
 
 ---
 
-Example 1
-Input: Travis Scott, Metro Boomin, Future
-Output: ["streetwear","dark","oversized","edgy","premium","monochrome"]
+## OUTPUT FORMAT (STRICT)
 
-Example 2
-Input: Drake chill playlist
-Output: ["minimal","clean","neutral","casual","soft","layered"]
+Single input:
+["tag1","tag2","tag3","tag4","tag5","tag6"]
 
-Example 3
-Input: EDM festival
-Output: ["festival","bold","vibrant","statement","experimental","flashy"]
+Multiple inputs:
+{
+  "input_name": ["tag1","tag2","tag3","tag4","tag5","tag6"]
+}
 
-Example 4
-Input: Indie rock coffee shop
-Output: ["vintage","retro","casual","relaxed","earth-tone","layered"]
+- 5–8 tags
+- lowercase only
+- no duplicates
+- no explanations
 
-Example 5
-Input: Gym workout
-Output: ["athleisure","performance","fitted","breathable","sporty","minimal"]
+---
 
-Example 6
-Input: Beach house vibes
-Output: ["resort","lightweight","airy","summer","relaxed","coastal"]
+## TAG SYSTEM
 
-Example 7
-Input: Kanye West old school
-Output: ["streetwear","layered","neutral","oversized","urban","minimal"]
+Each output must include a mix of:
+- aesthetic (streetwear, minimal, luxury, vintage, etc.)
+- color/mood (dark, neutral, vibrant, monochrome, etc.)
+- fit (oversized, fitted, relaxed, layered)
+- context (casual, nightlife, festival, outdoor, etc.)
 
-Example 8
-Input: Classical music
-Output: ["tailored","elegant","refined","formal","timeless","minimal"]
+---
 
-Example 9
-Input: Pop hits
-Output: ["trendy","bright","playful","casual","modern","youthful"]
+## GENRE → STYLE MAPPING
 
-Example 10
-Input: R&B slow jams
-Output: ["sleek","fitted","smooth","minimal","date-night","dark"]
+Use consistent pattern mapping:
 
-Example 11
-Input: Techno underground
-Output: ["dark","minimal","monochrome","futuristic","edgy","sleek"]
+- hip hop / rap → streetwear, oversized, urban, bold  
+- electronic → minimal, sleek, futuristic, monochrome  
+- rock / punk → edgy, distressed, dark, rebellious  
+- indie → vintage, relaxed, layered, retro  
+- pop → trendy, bright, playful, modern  
+- r&b → sleek, fitted, smooth, minimal  
+- jazz / classical → tailored, elegant, refined  
+- country / folk → rugged, denim, heritage  
+- afro / latin → vibrant, colorful, expressive  
+- ambient → minimal, soft, neutral, relaxed  
 
-Example 12
-Input: Country music
-Output: ["western","rugged","denim","casual","heritage","outdoor"]
+Refine for subgenres (deep, hardcore, experimental, etc.)
 
-Example 13
-Input: Punk rock
-Output: ["edgy","distressed","black","statement","rebellious","bold"]
+---
 
-Example 14
-Input: Jazz lounge
+## FEW-SHOT COVERAGE (HIGH SIGNAL)
+
+Hip Hop:
+Input: Trap  
+Output: ["streetwear","oversized","dark","bold","layered","urban"]
+
+Input: Boom Bap  
+Output: ["retro","streetwear","vintage","layered","classic","urban"]
+
+Electronic:
+Input: House  
+Output: ["sleek","minimal","clean","modern","nightlife","fitted"]
+
+Input: Techno  
+Output: ["dark","monochrome","futuristic","minimal","edgy","sleek"]
+
+Input: Dubstep  
+Output: ["bold","dark","statement","experimental","streetwear","graphic"]
+
+Rock:
+Input: Punk Rock  
+Output: ["edgy","distressed","black","rebellious","statement","bold"]
+
+Input: Grunge  
+Output: ["layered","oversized","vintage","distressed","dark","casual"]
+
+Input: Metal  
+Output: ["dark","heavy","edgy","statement","black","bold"]
+
+Indie / Alt:
+Input: Indie Rock  
+Output: ["vintage","layered","casual","relaxed","retro","earth-tone"]
+
+Input: Indie Pop  
+Output: ["playful","colorful","casual","youthful","soft","layered"]
+
+Pop:
+Input: Pop  
+Output: ["trendy","bright","playful","modern","casual","youthful"]
+
+Input: Synth Pop  
+Output: ["retro","colorful","bold","flashy","vintage","statement"]
+
+R&B:
+Input: Neo Soul  
+Output: ["sleek","smooth","fitted","minimal","warm","elevated"]
+
+Input: Alternative R&B  
+Output: ["minimal","dark","clean","fitted","moody","modern"]
+
+Jazz / Classical:
+Input: Jazz  
 Output: ["tailored","elegant","classic","refined","timeless","smart-casual"]
 
-Example 15
-Input: Summer pop
-Output: ["bright","lightweight","casual","playful","summer","colorful"]
+Input: Classical  
+Output: ["tailored","formal","elegant","minimal","timeless","refined"]
 
-Example 16
-Input: Winter chill
-Output: ["cozy","layered","warm","neutral","minimal","relaxed"]
+Country / Folk:
+Input: Country  
+Output: ["western","denim","rugged","casual","heritage","outdoor"]
 
-Example 17
-Input: Afrobeat party
+Input: Folk  
+Output: ["earth-tone","relaxed","layered","natural","casual","vintage"]
+
+Afro / Latin:
+Input: Afrobeat  
 Output: ["vibrant","colorful","bold","expressive","summer","statement"]
 
-Example 18
-Input: Lo-fi beats
-Output: ["minimal","relaxed","neutral","comfortable","soft","everyday"]
+Input: Reggaeton  
+Output: ["streetwear","fitted","bold","nightlife","vibrant","sleek"]
 
-Example 19
-Input: Luxury rap
-Output: ["luxury","designer","premium","tailored","dark","statement"]
+Input: Salsa  
+Output: ["elegant","fitted","vibrant","dressy","expressive","flowy"]
 
-Example 20
-Input: Hiking playlist
-Output: ["outdoor","functional","durable","layered","utility","neutral"]
+Ambient / Chill:
+Input: Ambient  
+Output: ["minimal","soft","neutral","flowy","relaxed","calm"]
 
-Example 21
-Input: Club night
-Output: ["sleek","fitted","dark","bold","nightlife","statement"]
+Input: Lo-fi  
+Output: ["comfortable","minimal","neutral","relaxed","soft","everyday"]
 
-Example 22
-Input: Preppy vibes
-Output: ["preppy","clean","tailored","classic","polished","smart"]
+Experimental:
+Input: Glitch  
+Output: ["experimental","futuristic","bold","edgy","statement","unique"]
 
-Example 23
-Input: Street skate
-Output: ["skate","oversized","casual","streetwear","relaxed","graphic"]
+Input: Avant-garde  
+Output: ["avant-garde","high-fashion","experimental","bold","statement","artsy"]
 
-Example 24
-Input: 90s hip hop
-Output: ["retro","oversized","streetwear","vintage","baggy","classic"]
+High Energy:
+Input: Hardcore  
+Output: ["aggressive","bold","dark","statement","streetwear","edgy"]
 
-Example 25
-Input: 80s synth
-Output: ["retro","bold","colorful","statement","vintage","flashy"]
+Input: Drum And Bass  
+Output: ["fast-paced","sporty","bold","streetwear","fitted","energetic"]
 
-Example 26
-Input: Chill Sunday
-Output: ["comfortable","casual","relaxed","soft","minimal","easywear"]
+Luxury / Chill:
+Input: Lounge  
+Output: ["luxury","clean","minimal","relaxed","elevated","sleek"]
 
-Example 27
-Input: Date night
-Output: ["sleek","fitted","minimal","elevated","clean","refined"]
-
-Example 28
-Input: Business casual
-Output: ["polished","clean","tailored","modern","minimal","professional"]
-
-Example 29
-Input: Airport travel
-Output: ["comfortable","layered","casual","relaxed","neutral","practical"]
-
-Example 30
-Input: Snow trip
-Output: ["winter","layered","technical","warm","outdoor","functional"]
-
-Example 31
-Input: Designer runway
-Output: ["high-fashion","experimental","bold","avant-garde","luxury","statement"]
-
-Example 32
-Input: Minimal tech
-Output: ["minimal","sleek","monochrome","modern","futuristic","clean"]
-
-Example 33
-Input: Gym + errands
-Output: ["athleisure","casual","versatile","comfortable","minimal","practical"]
-
-Example 34
-Input: Night drive
-Output: ["dark","sleek","minimal","cool","monochrome","edgy"]
-
-Example 35
-Input: Summer festival
-Output: ["festival","boho","lightweight","colorful","free","playful"]
-
-Example 36
-Input: Rainy day
-Output: ["layered","neutral","cozy","functional","minimal","calm"]
-
-Example 37
-Input: Yacht party
-Output: ["luxury","resort","clean","lightweight","elevated","summer"]
-
-Example 38
-Input: High energy rap
-Output: ["streetwear","bold","oversized","statement","urban","dark"]
-
-Example 39
-Input: Meditation music
-Output: ["minimal","soft","neutral","relaxed","flowy","calm"]
-
-Example 40
-Input: Art gallery
-Output: ["minimal","modern","clean","elevated","artsy","refined"]
-
-Example 41
-Input: Fashion week
-Output: ["trend-forward","bold","experimental","luxury","statement","edgy"]
-
-Example 42
-Input: College campus
-Output: ["casual","comfortable","youthful","relaxed","basic","layered"]
-
-Example 43
-Input: Beach party
-Output: ["summer","lightweight","casual","vibrant","relaxed","fun"]
-
-Example 44
-Input: Retro funk
-Output: ["retro","colorful","bold","playful","vintage","statement"]
-
-Example 45
-Input: Cozy night in
-Output: ["cozy","soft","comfortable","relaxed","minimal","warm"]
-
-Example 46
-Input: Startup office
-Output: ["smart-casual","minimal","clean","modern","relaxed","professional"]
-
-Example 47
-Input: Luxury vacation
-Output: ["luxury","resort","elevated","clean","lightweight","premium"]
-
-Example 48
-Input: Dark academia
-Output: ["vintage","layered","neutral","intellectual","classic","moody"]
-
-Example 49
-Input: Tech startup founder
-Output: ["minimal","clean","neutral","modern","simple","sleek"]
-
-Example 50
-Input: Street fashion Tokyo
-Output: ["experimental","layered","streetwear","bold","avant-garde","unique"]
+Input: Chill-out  
+Output: ["lightweight","relaxed","minimal","soft","casual","clean"]
 
 ---
 
-Now generate tags for this input:
+## TASK
 
-{{playlist_or_user_prompt}}`;
+Generate fashion tags for:
+
+{{playlist_or_user_prompt}}
+
+---
+
+## FINAL CHECK
+
+- correct format
+- 5–8 tags
+- consistent with genre family
+- clean + production-ready
+`;
 
 export default function App() {
   const [view, setView] = useState<'home' | 'how-it-works' | 'loading' | 'result'>('home');
