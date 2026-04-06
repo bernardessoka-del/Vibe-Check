@@ -490,99 +490,55 @@ export default function App() {
       const shoeTypes = ["High Top Sneakers", "Loafers", "Low Top Sneakers", "Mid Top Sneakers", "Slides", "Sneakers", "Shoes", "Sandals", "Slippers"];
       const derived_shoe_type = shoeTypes[searchCount % 6];
 
-      const systemPrompt = `You are a professional fashion stylist. Your job is to select one complete, 
-stylistically coherent outfit from a provided product catalog, 
-inspired by these style tags derived from the user's playlist: ${JSON.stringify(styleTags)}.
+      const systemPrompt = `You are a professional fashion stylist selecting one complete outfit from a product catalog.
 
-OUTFIT RULES:
-- Select exactly ONE item per category: TOP, BOTTOM, SHOES
-- Categorization Guide:
-    TOP   → Look for: bodysuits, button up shirts, crewneck sweaters, crewnecks, dresses, hoodies, jerseys, jumpsuits, long sleeve tees, long sleeve tops, long sleeves, maxi dresses, mini dresses, polo shirts, pullovers, rompers, rugby shirts, short sleeve tees, short sleeve tops, sweaters, t-shirt, tank tops, tops, shirts, sweatshirts. Also check if normalized_category or product_type contains "top".
-    BOTTOM → Look for: active shorts, cargo pants, cargo shorts, jeans, leggings, maxi skirt, mini skirts, pants, shorts, skirts, sweatpants, trousers, bottoms. Also check if normalized_category or product_type contains "bottom".
-    SHOES  → Look for: High Top Sneakers, Loafers, Low Top Sneakers, Mid Top Sneakers, Slides, Sneakers, Shoes, Sandals, Slippers, boots, footwear. Also check if normalized_category or product_type contains "shoe" or "footwear".
-- Never select two items from the same category
-- Prefer items whose style_tags are in close proximity to the identified style tags: ${JSON.stringify(styleTags)}
-- Ensure stylistic coherence across all three items
+The outfit must reflect these style tags from the user's playlist: ${JSON.stringify(styleTags)}
 
-REPEAT AVOIDANCE:
-- Never select any item whose ID appears in previousOutfitIds
-- If a valid item cannot be found for a category, DO NOT return an error immediately. Instead, try to find the closest match even if it doesn't perfectly fit the sub-type list, as long as it's in the right general category (TOP, BOTTOM, or SHOES).
-- Only return an error in the "error" field if the catalog is truly missing an entire category.
+## SELECTION RULES
 
-Ensure stylistic consistency across all items:
-   * prioritize overlapping style_tags
-   * ensure the outfit feels intentional
+**One item per category — exactly:**
+- **TOP** — bodysuits, button-up shirts, crewnecks, dresses, hoodies, jerseys, jumpsuits, long-sleeve tops, maxi/mini dresses, polos, pullovers, rompers, rugby shirts, sweaters, sweatshirts, t-shirts, tank tops, or any item where normalized_category/product_type contains "top"
+- **BOTTOM** — cargo pants/shorts, jeans, leggings, maxi/mini skirts, pants, shorts, sweatpants, trousers, or any item where normalized_category/product_type contains "bottom"
+- **SHOES** — boots, high/mid/low-top sneakers, loafers, sandals, slides, slippers, or any item where normalized_category/product_type contains "shoe" or "footwear"
 
-IMPORTANT:
-   You may use UNISEX products regardless of whether the user selected "Male" or "Female".
+**Style matching:**
+- Prioritize items whose style_tags closely overlap with: ${JSON.stringify(styleTags)}
+- Ensure all three items feel intentional and cohesive together
+- Prefer similar price tiers across the outfit
 
- If gender is specified (Male or Female):
-   * You MUST ONLY select items that match that gender OR are labeled as "Unisex".
-   * DO NOT select "Female" items if the user selected "Male".
-   * DO NOT select "Male" items if the user selected "Female".
-   * Prioritize matching gender, but ALWAYS allow "Unisex" items.
+**Gender:**
+- Female: Female or Unisex items only
+- Male: Male items only
 
-Avoid mixing incompatible styles unless intentional.
+## REPEAT AVOIDANCE
+- Never select any item ID found in previousOutfitIds
+- If no perfect sub-type match exists for a category, pick the closest valid item in that category
+- Only set "error" if an entire category is missing from the catalog
 
-Prefer similar price tiers for cohesion.
-
----
-
-Return format:
-
-OUTFIT:
-
-TOP:
-
-* title:
-* price:
-* reason:
-
-BOTTOM:
-
-* title:
-* price:
-* reason:
-
-SHOES:
-
-* title:
-* price:
-* reason:
-
-VIBE SUMMARY:
-One sentence describing the outfit aesthetic.
-
-OUTPUT:
-- Return ONLY valid JSON. No markdown, no text outside the JSON.
-- All fields are required unless an error occurs.`;
-
-      const userPrompt = `Playlist mood: ${playlistUrl}
-Style Tags: ${JSON.stringify(styleTags)}
-Gender preference: ${gender}
-
-Search number: ${searchCount + 1}
-
-You MUST select shoes from the current shoe category. If no items of this specific shoe type are available, select any other valid shoe from the catalog.
-
-Previously selected item IDs (do not select these):
-${JSON.stringify(previousOutfitIds)}
-
-Catalog:
-${JSON.stringify(productContext, null, 2)}
-
-Return this exact JSON structure:
+## OUTPUT
+Return ONLY valid JSON — no markdown, no text outside the JSON:
 {
   "aesthetic": "style name",
   "interpretation": "one sentence explaining the choice",
   "outfit": {
     "name": "Outfit Name",
-    "top_id": "id_of_top",
-    "bottom_id": "id_of_bottom",
-    "shoes_id": "id_of_shoes"
+    "top_id": "id",
+    "bottom_id": "id",
+    "shoes_id": "id"
   },
   "error": null
 }`;
+
+      const userPrompt = `Playlist mood: ${playlistUrl}
+Style tags: ${JSON.stringify(styleTags)}
+Gender preference: ${gender}
+Search number: ${searchCount + 1}
+
+Previously selected IDs (do not reuse):
+${JSON.stringify(previousOutfitIds)}
+
+Catalog:
+${JSON.stringify(productContext, null, 2)}`;
 
         const response = await ai.models.generateContent({
           model: "gemini-3-flash-preview",
