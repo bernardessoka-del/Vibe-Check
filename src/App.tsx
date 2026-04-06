@@ -501,14 +501,16 @@ The outfit must reflect these style tags from the user's playlist: ${JSON.string
 - **BOTTOM** — cargo pants/shorts, jeans, leggings, maxi/mini skirts, pants, shorts, sweatpants, trousers, or any item where normalized_category/product_type contains "bottom"
 - **SHOES** — boots, high/mid/low-top sneakers, loafers, sandals, slides, slippers, or any item where normalized_category/product_type contains "shoe" or "footwear"
 
+**Gender:**
+- Female: Female or Unisex items only
+- Male: Male items only, restricted to:
+  - TOP: button-up shirts, crewnecks, dresses, hoodies, jerseys, polos, rugby shirts, sweaters, sweatshirts, t-shirts
+  - BOTTOM: cargo pants/shorts, jeans, pants, shorts, sweatpants, trousers
+
 **Style matching:**
 - Prioritize items whose style_tags closely overlap with: ${JSON.stringify(styleTags)}
 - Ensure all three items feel intentional and cohesive together
 - Prefer similar price tiers across the outfit
-
-**Gender:**
-- Female: Female or Unisex items only
-- Male: Male items only
 
 ## REPEAT AVOIDANCE
 - Never select any item ID found in previousOutfitIds
