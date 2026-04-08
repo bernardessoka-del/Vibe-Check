@@ -378,37 +378,39 @@ export default function App() {
       // Try direct parse first
       return JSON.parse(text);
     } catch (e) {
-      // If direct parse fails, try to extract JSON from markdown blocks
+      // 1. Try to extract JSON from markdown blocks
       const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/```([\s\S]*?)```/);
       if (jsonMatch && jsonMatch[1]) {
         try {
           return JSON.parse(jsonMatch[1].trim());
         } catch (e2) {
-          console.error("Failed to parse extracted JSON:", e2);
+          // Continue to next method
         }
       }
       
-      // Try to find anything that looks like a JSON object/array
-      const firstBrace = text.indexOf('{');
-      const lastBrace = text.lastIndexOf('}');
-      const firstBracket = text.indexOf('[');
-      const lastBracket = text.lastIndexOf(']');
-      
-      if (firstBrace !== -1 && lastBrace !== -1) {
-        try {
-          return JSON.parse(text.substring(firstBrace, lastBrace + 1));
-        } catch (e3) {
-          console.error("Failed to parse braced JSON:", e3);
+      // 2. Robust extraction: Find the first { or [ and iteratively try to find the matching closing brace
+      const extractJson = (str: string, startChar: string, endChar: string) => {
+        let start = str.indexOf(startChar);
+        if (start === -1) return null;
+        
+        let lastEnd = str.lastIndexOf(endChar);
+        while (lastEnd > start) {
+          try {
+            const candidate = str.substring(start, lastEnd + 1);
+            return JSON.parse(candidate);
+          } catch (err) {
+            // Move backwards to the previous occurrence of the end character
+            lastEnd = str.lastIndexOf(endChar, lastEnd - 1);
+          }
         }
-      }
-      
-      if (firstBracket !== -1 && lastBracket !== -1) {
-        try {
-          return JSON.parse(text.substring(firstBracket, lastBracket + 1));
-        } catch (e4) {
-          console.error("Failed to parse bracketed JSON:", e4);
-        }
-      }
+        return null;
+      };
+
+      const objectResult = extractJson(text, '{', '}');
+      if (objectResult) return objectResult;
+
+      const arrayResult = extractJson(text, '[', ']');
+      if (arrayResult) return arrayResult;
 
       console.error("All JSON extraction attempts failed for text:", text);
       return fallback;
@@ -513,12 +515,12 @@ The outfit must reflect these style tags from the user's playlist: ${JSON.string
 - Prefer similar price tiers across the outfit
 
 ## REPEAT AVOIDANCE
-- Never select any item ID found in previousOutfitIds
+- Never select any item ID found in previousOutfitIds (this history tracks the last 300 outfits to ensure variety)
 - If no perfect sub-type match exists for a category, pick the closest valid item in that category
 - Only set "error" if an entire category is missing from the catalog
 
 ## OUTPUT
-Return ONLY valid JSON — no markdown, no text outside the JSON:
+Return ONLY valid JSON. No markdown, no conversational text, no trailing characters.
 {
   "aesthetic": "style name",
   "interpretation": "one sentence explaining the choice",
@@ -540,7 +542,9 @@ Previously selected IDs (do not reuse):
 ${JSON.stringify(previousOutfitIds)}
 
 Catalog:
-${JSON.stringify(productContext, null, 2)}`;
+${JSON.stringify(productContext, null, 2)}
+
+Ensure the response is a single, clean JSON object.`;
 
         const response = await ai.models.generateContent({
           model: "gemini-3-flash-preview",
@@ -584,7 +588,11 @@ ${JSON.stringify(productContext, null, 2)}`;
         };
 
         setLookbook(generatedLookbook);
-        setPreviousOutfitIds(prev => [...prev, top.id, bottom.id, shoes.id]);
+        setPreviousOutfitIds(prev => {
+          const next = [...prev, top.id, bottom.id, shoes.id];
+          // Keep history for 300 outfits (300 * 3 = 900 items) to ensure variety
+          return next.slice(-900);
+        });
         setSearchCount(prev => prev + 1);
         setView('result');
     } catch (err: any) {
