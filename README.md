@@ -15,6 +15,8 @@ It bridges the gap between **music taste and personal style** by translating aud
 
 From sound → style → shopping in ~3–5 seconds.
 
+try it here: https://vibe-check-1212-app.vercel.app/
+
 ---
 
 ## ✨ Features
