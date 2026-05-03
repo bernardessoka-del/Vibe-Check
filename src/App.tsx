@@ -320,7 +320,7 @@ export default function App() {
     
     try {
       const { data, error } = await supabase
-        .from('Product_Catalog_5')
+        .from('V2_Prod_Catalog_6')
         .select('*');
       
       if (error) throw error;
@@ -647,15 +647,18 @@ Ensure the response is a single, clean JSON object.`;
 
   const handlePaste = async () => {
     try {
+      if (!navigator.clipboard || !navigator.clipboard.readText) {
+        throw new Error('Clipboard API not supported');
+      }
       const text = await navigator.clipboard.readText();
       if (text) {
         setPlaylistUrl(text);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to read clipboard:', err);
-      // Fallback: alert user or show toast if permission denied
-      setShareFeedback('Clipboard access denied');
-      setTimeout(() => setShareFeedback(null), 3000);
+      // Fallback: guide the user to use native paste
+      setShareFeedback('Use Ctrl+V / Cmd+V to paste');
+      setTimeout(() => setShareFeedback(null), 4000);
     }
   };
 
