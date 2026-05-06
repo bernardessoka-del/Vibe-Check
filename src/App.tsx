@@ -464,15 +464,17 @@ export default function App() {
       );
 
       if (!hasCategory('top') || !hasCategory('bottom') || !hasCategory('shoe')) {
-        console.warn("Missing a category after gender filtering, falling back to full catalog for missing categories");
-        // Add back items from the full catalog if they are missing
+        console.warn("Missing a category after gender filtering, checking for any available unisex items");
+        // Add back items from the full catalog but only if they are Unisex (if not already in filteredProducts)
         ['top', 'bottom', 'shoe'].forEach(cat => {
           if (!hasCategory(cat)) {
-            const missingItems = products.filter(p => 
-              p.normalized_category?.toLowerCase().includes(cat) || 
-              p.product_type?.toLowerCase().includes(cat)
-            ).slice(0, 10); // Just take a few to keep context small
-            filteredProducts = [...filteredProducts, ...missingItems];
+            const extraItems = products.filter(p => {
+              const matchesCat = p.normalized_category?.toLowerCase().includes(cat) || 
+                                p.product_type?.toLowerCase().includes(cat);
+              const respectsGender = p.gender?.toLowerCase() === 'unisex';
+              return matchesCat && respectsGender;
+            }).slice(0, 10);
+            filteredProducts = [...filteredProducts, ...extraItems];
           }
         });
       }
@@ -506,7 +508,7 @@ The outfit must reflect these style tags from the user's playlist: ${JSON.string
 **Gender:**
 - Female: Female or Unisex items only
 - Male: Male items only, restricted to:
-  - TOP: button-up shirts, crewnecks, dresses, hoodies, jerseys, polos, rugby shirts, sweaters, sweatshirts, t-shirts
+  - TOP: button-up shirts, crewnecks, hoodies, jerseys, polos, rugby shirts, sweaters, sweatshirts, t-shirts
   - BOTTOM: cargo pants/shorts, jeans, pants, shorts, sweatpants, trousers
 
 **Style matching:**
